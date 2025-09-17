@@ -26,6 +26,8 @@ Estado del proyecto: *End of life*
 | Mapa | Muestra un mapa de la isla y la posición del/la jugador/a en ella|
 | Obras públicas | Para terraformar|
 
+![Jugador usando Nookófono](https://dodo.ac/np/images/thumb/2/2b/NH_Player_NookPhone_Interface.jpg/450px-NH_Player_NookPhone_Interface.jpg)
+
 ### ¿Qué hacer en la isla?
 - Actividades
    - Personalización de la isla
@@ -38,20 +40,39 @@ Estado del proyecto: *End of life*
 ## Acceso al proyecto
 Para poder descargar **Animal Crossing: New Horizons**, el usuario deberá contar con una consola **Switch 1** o **Switch 2**. El videojuego está disponible para descargar por medio de la **Nintendo EShop** o a través de un cartucho físico.
 
+![Nintendo EShop](https://distributedrewards-production.s3.amazonaws.com/uploads/gift_card_logo/1401/7d07e241-c824-4f49-a9c3-9a0815349370.jpg)
+
 ## Tecnologías utilizadas
 
 - C++
 - Nintendo's Internal Engine
 - Tecnologías gráficas 
   - Dispersión de Rayleigh
-  - Filtrado anisotrópicos
+  - Filtrados anisotrópicos
   - PBR
 
 ## Personas contribuyentes
 
+- Productor: Hisashi Nogami
+- Director de juego: Aya Kyogoku
+- Creador de la serie: Katsuya Eguchi, Hisashi Nogami
+- Programadores: Yoshikita Takeshita, Hiromichi Miyake
+- Artistas: Koji Takahashi, Shinji Yato, Yuji Watanabe
+- Escritores: Makoto Wada
+- Compositores: Kazumi Totaka, Yasuaki Iwata, Yumi Takahashi, Shinobu Nagata, Sayako Doi, Masato Ohashi
+- Diseño de sonido: Takuro Yasuda
+
 ## Personas desarrolladoras del proyecto
+[<img src="https://pm1.aminoapps.com/6795/abb797bcf25d8be43f3d1432c7df497c9f6b4ba9v2_00.jpg" width=115><br><sub>Hisashi Nogami</sub>](https://https://es.wikipedia.org/wiki/Hisashi_Nogami)   
+[<img src="https://dodo.ac/np/images/6/68/Katsuya_Eguchi.jpg" width=115><br><sub>Katsuya Eguchi</sub>](https://https://es.wikipedia.org/wiki/Katsuya_Eguchi)
+
+
 
 ## Licencia
+Animal Crossing: New Horizons está bajo la licencia ANIMAL CROSSING™, propiedad de Nintendo of America Inc.
+
+
+![Logo de Nintendo](https://upload.wikimedia.org/wikipedia/commons/thumb/0/0d/Nintendo.svg/640px-Nintendo.svg.png)
 
 
 
