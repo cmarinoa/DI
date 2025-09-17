@@ -40,6 +40,13 @@ Para poder descargar **Animal Crossing: New Horizons**, el usuario deberá conta
 
 ## Tecnologías utilizadas
 
+- C++
+- Nintendo's Internal Engine
+- Tecnologías gráficas 
+  - Dispersión de Rayleigh
+  - Filtrado anisotrópicos
+  - PBR
+
 ## Personas contribuyentes
 
 ## Personas desarrolladoras del proyecto
