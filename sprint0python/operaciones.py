@@ -4,6 +4,9 @@
 # si un archivo de Python se está ejecutando directamente o si se está
 # importando como módulo en otro archivo permitiendo que el código dentro
 # de ese bloque solo se ejecite si el archivo no ha sido importado.
+# En el caso de este ejercicio, no será necesario el
+# if __name__ = __main__, ya que el programa calculadora.py
+# será ejecutado directamente.
 
 
 #Ejercicio 1;
