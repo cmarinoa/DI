@@ -2,7 +2,7 @@ import tkinter as tk
 
 # Creamos la ventana principal
 root = tk.Tk()
-root.title("Ejercicio 1: Label")
+root.title("Ejercicio 2: Button")
 root.geometry("300x150")
 
 # Creamos la etiqueta con el mensaje que cambiará
