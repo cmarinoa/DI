@@ -23,13 +23,13 @@ while True:
         print(operaciones.division(n1, n2))
 
     else:
-        print("Introduzca una operación válida\n")
+        print("Introduzca una operación válida")
         continue
 
-    print("\n¿Desea realizar otra operación? (sí / no)")
+    print("¿Desea realizar otra operación? (sí / no)")
     respuesta = input().lower()
 
-    if respuesta != 'sí':
+    if respuesta not in ['sí', 'si']:
         print("Programa terminado.")
         break
 
