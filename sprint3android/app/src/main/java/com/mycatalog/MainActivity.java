@@ -9,6 +9,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.NavigationUI;
+
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -19,12 +23,15 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        detailButton = findViewById(R.id.detailButton);
+        setupNavegacion();
+    }
 
-        // Configurar el click correctamente
-        detailButton.setOnClickListener(v -> {
-            Intent intent = new Intent(MainActivity.this, DetailActivity.class);
-            startActivity(intent);
-        });
+    private void setupNavegacion(){
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_hostfragment);
+        NavigationUI.setupWithNavController(
+                bottomNavigationView,
+                navHostFragment.getNavController()
+        );
     }
 }
