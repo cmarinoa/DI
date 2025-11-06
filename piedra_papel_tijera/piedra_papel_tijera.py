@@ -125,10 +125,10 @@ class PiedraPapelTijera:
 
         # Mejor de tres
         if self.puntos_jugador == 3:
-            messagebox.showinfo("Has ganado! :D")
+            messagebox.showinfo("Resultado", "Has ganado! :D")
             self.reiniciar()
         elif self.puntos_maquina == 3:
-            messagebox.showinfo("Has perdido :(")
+            messagebox.showinfo("Resultado", "Has perdido :(")
             self.reiniciar()
 
    # Reinicio las etiquetas y las puntuaciones para preparar un nuevo juego
