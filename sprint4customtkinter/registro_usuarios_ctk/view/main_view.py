@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from PIL import Image
+import os
 
 class MainView(ctk.CTkFrame):
 
@@ -150,7 +151,8 @@ class MainView(ctk.CTkFrame):
         # Intentar cargar el avatar usando PIL
         try:
             if usuario.avatar:  # si hay ruta definida
-                imagen = ctk.CTkImage(Image.open(usuario.avatar), size=(150, 150))
+                avatar_path = os.path.join("assets", usuario.avatar)
+                imagen = ctk.CTkImage(Image.open(avatar_path), size=(150, 150))
                 self.label_avatar.configure(image=imagen, text="")
                 self.label_avatar.image = imagen  # necesario para que no lo borre el garbage collector
             else:
@@ -162,7 +164,7 @@ class MainView(ctk.CTkFrame):
         # Actualizar datos de usuario
         self.label_nombre.configure(text=f"Nombre: {usuario.nombre}")
         self.label_edad.configure(text=f"Edad: {usuario.edad}")
-        self.label_genero_preview.configure(text=f"Género: {usuario.genero}")
+        self.label_genero.configure(text=f"Género: {usuario.genero}")
 
 
 
