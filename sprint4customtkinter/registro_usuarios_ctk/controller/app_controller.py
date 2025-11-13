@@ -5,33 +5,29 @@ import tkinter.messagebox as messagebox
 from PIL import Image
 import os
 
-import customtkinter as ctk
-from view.main_view import MainView
-from model.usuario_model import GestorUsuarios, Usuario
-import tkinter.messagebox as messagebox
-from PIL import Image
-import os
-
 
 class AppController:
     def __init__(self, app):
         self.app = app
         self.modelo = GestorUsuarios()
+        self.usuarios_filtrados = []  # Lista para usuarios filtrados
 
         # Cargar usuarios al iniciar la app
         try:
             self.modelo.cargar_csv()
+            self.usuarios_filtrados = self.modelo.listar()
         except FileNotFoundError:
             # Si el archivo no existe, empezar con lista vacía
-            pass
+            self.usuarios_filtrados = []
         except Exception as e:
             messagebox.showwarning("Advertencia", f"No se pudieron cargar los usuarios: {str(e)}")
+            self.usuarios_filtrados = []
 
         # Vista principal
         self.vista = MainView(self.app, controller=self)
 
         # Recoge los datos del modelo y los vuelca en la interfaz
-        self.vista.mostrar_usuarios(self.modelo.listar())
+        self.actualizar_vista()
 
     # Mostrar detalles del usuario
     def seleccionar_usuario(self, usuario):
@@ -46,58 +42,124 @@ class AppController:
 
     # Función que elimina el usuario
     def eliminar_usuario(self):
-        # Obtener el índice del usuario seleccionado
-        indice = self.vista.obtener_indice_seleccionado()
+        # Obtener el índice del usuario seleccionado en la lista filtrada
+        indice_filtrado = self.vista.obtener_indice_seleccionado()
 
-        if indice is None:
-            import tkinter.messagebox as messagebox
+        if indice_filtrado is None:
             messagebox.showwarning("Advertencia", "Selecciona un usuario de la lista para eliminar")
             return
 
-        # Obtener el usuario para mostrar en el mensaje de confirmación
-        usuario = self.vista.obtener_usuario_seleccionado()
+        # Obtener el usuario de la lista filtrada
+        usuario_filtrado = self.usuarios_filtrados[indice_filtrado]
 
         # Confirmar eliminación con el usuario
-        import tkinter.messagebox as messagebox
         confirmar = messagebox.askyesno(
             "Confirmar eliminación",
-            f"¿Estás seguro de que quieres eliminar a {usuario.nombre}?"
+            f"¿Estás seguro de que quieres eliminar a {usuario_filtrado.nombre}?"
         )
 
         if not confirmar:
             return
 
         try:
-            # Eliminar el usuario usando la función del modelo
-            self.modelo.eliminar(indice)
+            # Encontrar el índice real en la lista completa buscando por nombre y otros datos
+            indice_real = None
+            for i, usuario in enumerate(self.modelo.listar()):
+                if (usuario.nombre == usuario_filtrado.nombre and
+                        usuario.edad == usuario_filtrado.edad and
+                        usuario.genero == usuario_filtrado.genero):
+                    indice_real = i
+                    break
 
-            # Actualizar la vista con la lista actualizada
-            self.vista.mostrar_usuarios(self.modelo.listar())
+            if indice_real is not None:
+                # Eliminar el usuario usando la función del modelo
+                self.modelo.eliminar(indice_real)
 
-            # Limpiar el panel de detalles
-            self.vista.mostrar_detalle_usuario(None)
+                # Actualizar la vista con la lista actualizada
+                self.aplicar_filtros()
 
-            # Guardar los cambios en el CSV
-            try:
-                self.modelo.guardar_csv()
-                messagebox.showinfo("Éxito", "Usuario eliminado correctamente")
-            except Exception as e:
-                messagebox.showwarning("Advertencia", f"Usuario eliminado pero no se pudo guardar en CSV: {str(e)}")
+                # Limpiar el panel de detalles
+                self.vista.mostrar_detalle_usuario(None)
+
+                # Guardar los cambios en el CSV
+                try:
+                    self.modelo.guardar_csv()
+                    self.vista.actualizar_estado("Usuario eliminado correctamente.",
+                                                 len(self.modelo.listar()),
+                                                 len(self.usuarios_filtrados))
+                except Exception as e:
+                    self.vista.actualizar_estado(f"Usuario eliminado pero error guardando: {str(e)}",
+                                                 len(self.modelo.listar()),
+                                                 len(self.usuarios_filtrados))
+            else:
+                messagebox.showerror("Error", "No se pudo encontrar el usuario para eliminar")
 
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo eliminar el usuario: {str(e)}")
 
-    # Función para editar el usuario
-    def editar_usuario(self):
-        print("En construcción...")
+    # Función para editar el usuario desde doble clic
+    def editar_usuario_doble_clic(self, usuario_filtrado, indice_filtrado):
+        # Encontrar el usuario real en la lista completa
+        usuario_real = None
+        for usuario in self.modelo.listar():
+            if (usuario.nombre == usuario_filtrado.nombre and
+                    usuario.edad == usuario_filtrado.edad and
+                    usuario.genero == usuario_filtrado.genero):
+                usuario_real = usuario
+                break
+
+        if usuario_real:
+            self.abrir_formulario(usuario_real, indice_filtrado)
+        else:
+            messagebox.showerror("Error", "No se pudo encontrar el usuario para editar")
+
+    # Función para buscar usuarios en tiempo real
+    def buscar_usuarios(self, *args):
+        self.aplicar_filtros()
+
+    # Función para filtrar por género
+    def filtrar_por_genero(self, genero):
+        self.aplicar_filtros()
+
+    # Función que aplica todos los filtros
+    def aplicar_filtros(self):
+        texto_busqueda = self.vista.obtener_texto_busqueda()
+        genero_seleccionado = self.vista.obtener_genero_seleccionado()
+
+        todos_usuarios = self.modelo.listar()
+        self.usuarios_filtrados = []
+
+        for usuario in todos_usuarios:
+            # Filtro por texto - buscar en el nombre (case insensitive)
+            coincide_texto = texto_busqueda == "" or texto_busqueda in usuario.nombre.lower()
+
+            # Filtro por género
+            coincide_genero = genero_seleccionado == "todos" or usuario.genero == genero_seleccionado
+
+            if coincide_texto and coincide_genero:
+                self.usuarios_filtrados.append(usuario)
+
+        self.actualizar_vista()
+
+    # Función para actualizar la vista
+    def actualizar_vista(self):
+        self.vista.mostrar_usuarios(self.usuarios_filtrados)
+        self.vista.actualizar_estado("Listo.",
+                                     len(self.modelo.listar()),
+                                     len(self.usuarios_filtrados))
 
     # Función que abre una ventana para añadir un usuario
-    # Decidí hacerlo así en vez de crear una clase nueva para respetar la estructura de los archivos
-    # que nos dieron en la tarea
-    def abrir_formulario(self):
+    def abrir_formulario(self, usuario_editar=None, indice_editar=None):
         # Crear formulario modal con CTkToplevel
         formulario = ctk.CTkToplevel(self.app)
-        formulario.title("Añadir Usuario")
+
+        if usuario_editar:
+            formulario.title("Editar Usuario")
+            es_edicion = True
+        else:
+            formulario.title("Añadir Usuario")
+            es_edicion = False
+
         formulario.geometry("400x600")
         formulario.resizable(False, False)
         # Modal respecto al padre
@@ -114,8 +176,16 @@ class AppController:
         genero_var = ctk.StringVar(value="otro")
         avatar_var = ctk.StringVar()
 
+        # Si estamos editando, cargar datos del usuario
+        if es_edicion and usuario_editar:
+            nombre_var.set(usuario_editar.nombre)
+            edad_var.set(usuario_editar.edad)
+            genero_var.set(usuario_editar.genero)
+            avatar_var.set(usuario_editar.avatar)
+
         # Título
-        titulo = ctk.CTkLabel(formulario, text="Añadir Usuario", font=("Arial", 16, "bold"))
+        titulo = ctk.CTkLabel(formulario, text="Añadir Usuario" if not es_edicion else "Editar Usuario",
+                              font=("Arial", 16, "bold"))
         titulo.pack(pady=10)
 
         # Frame principal
@@ -176,7 +246,12 @@ class AppController:
         frame_avatars = ctk.CTkFrame(frame_principal)
         frame_avatars.grid(row=8, column=0, sticky="ew", pady=(0, 10))
 
-        # Función para seleccionar avatar
+        # Preview del avatar - DEFINIR PRIMERO para que esté disponible en el scope
+        label_preview = ctk.CTkLabel(frame_principal, text="Selecciona un avatar", height=120, fg_color="gray30",
+                                     corner_radius=10)
+        label_preview.grid(row=9, column=0, sticky="ew", pady=(0, 10))
+
+        # Función para seleccionar avatar - AHORA SÍ PUEDE ACCEDER A label_preview
         def seleccionar_avatar(avatar_file):
             avatar_var.set(avatar_file)
 
@@ -188,9 +263,11 @@ class AppController:
                     image = image.resize((100, 100), Image.Resampling.LANCZOS)
                     imagen_avatar = ctk.CTkImage(image, size=(100, 100))
                     label_preview.configure(image=imagen_avatar, text="")
+                    label_preview.image = imagen_avatar  # Mantener referencia
                 else:
                     label_preview.configure(image=None, text="Avatar no encontrado")
-            except Exception:
+            except Exception as e:
+                print(f"Error cargando avatar: {e}")
                 label_preview.configure(image=None, text="Error cargando avatar")
 
         # Botones para seleccionar avatar
@@ -205,10 +282,9 @@ class AppController:
             )
             btn.grid(row=0, column=i, padx=5, pady=5)
 
-        # Preview del avatar
-        label_preview = ctk.CTkLabel(frame_principal, text="Selecciona un avatar", height=120, fg_color="gray30",
-                                     corner_radius=10)
-        label_preview.grid(row=9, column=0, sticky="ew", pady=(0, 10))
+        # Si estamos editando, seleccionar el avatar actual
+        if es_edicion and usuario_editar and usuario_editar.avatar:
+            seleccionar_avatar(usuario_editar.avatar)
 
         # Botones confirmar y cancelar del formulario
         # Frame para botones
@@ -234,9 +310,28 @@ class AppController:
             # Guardar en el modelo
             try:
                 nuevo_usuario = Usuario(nombre, edad, genero, avatar)
-                self.modelo.añadir(nuevo_usuario)
-                self.vista.mostrar_usuarios(self.modelo.listar())
-                messagebox.showinfo("Éxito", "Usuario añadido correctamente")
+
+                if es_edicion:
+                    # Encontrar el índice real en la lista completa
+                    indice_real = None
+                    for i, u in enumerate(self.modelo.listar()):
+                        if u.nombre == usuario_editar.nombre and u.edad == usuario_editar.edad:
+                            indice_real = i
+                            break
+
+                    if indice_real is not None:
+                        self.modelo.actualizar(indice_real, nuevo_usuario)
+                        mensaje = "Usuario actualizado correctamente"
+                    else:
+                        raise Exception("No se pudo encontrar el usuario a editar")
+                else:
+                    self.modelo.añadir(nuevo_usuario)
+                    mensaje = "Usuario añadido correctamente"
+
+                self.aplicar_filtros()
+                self.vista.actualizar_estado(mensaje,
+                                             len(self.modelo.listar()),
+                                             len(self.usuarios_filtrados))
                 formulario.destroy()
 
             except Exception as e:
@@ -248,7 +343,7 @@ class AppController:
             error_label.pack()
             formulario.after(3000, error_label.destroy)
 
-        # Botón xonfirmar en el formulario
+        # Botón confirmar en el formulario
         boton_confirmar = ctk.CTkButton(
             frame_botones,
             text="Confirmar",
@@ -279,15 +374,19 @@ class AppController:
     def guardar_usuarios(self):
         try:
             self.modelo.guardar_csv()
-            messagebox.showinfo("Guardar", "Usuarios guardados correctamente.")
+            self.vista.actualizar_estado("Usuarios guardados correctamente.",
+                                         len(self.modelo.listar()),
+                                         len(self.usuarios_filtrados))
         except Exception as e:
             messagebox.showerror("Error", f"No se pudieron guardar los usuarios: {str(e)}")
 
     def cargar_usuarios(self):
         try:
             self.modelo.cargar_csv()
-            self.vista.mostrar_usuarios(self.modelo.listar())
-            messagebox.showinfo("Cargar", "Usuarios cargados correctamente.")
+            self.aplicar_filtros()
+            self.vista.actualizar_estado("Usuarios cargados correctamente.",
+                                         len(self.modelo.listar()),
+                                         len(self.usuarios_filtrados))
         except Exception as e:
             messagebox.showerror("Error", f"No se pudieron cargar los usuarios: {str(e)}")
 

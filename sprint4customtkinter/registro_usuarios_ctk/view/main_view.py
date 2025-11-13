@@ -2,6 +2,7 @@ import customtkinter as ctk
 from PIL import Image
 import os
 
+
 class MainView(ctk.CTkFrame):
 
     def __init__(self, parent, controller):
@@ -44,19 +45,29 @@ class MainView(ctk.CTkFrame):
 
         # Label + entry para buscar por nombre
         self.label_buscar = ctk.CTkLabel(self.frame_superior, text="Buscar:")
-        self.label_buscar.grid(row=0, column=2, padx=(10,5), pady=5)
+        self.label_buscar.grid(row=0, column=2, padx=(10, 5), pady=5)
 
         self.entry_buscar = ctk.CTkEntry(self.frame_superior, placeholder_text="Introduce un nombre")
-        self.entry_buscar.grid(row=0, column=3, padx=(0,10), pady=5, sticky="ew")
+        self.entry_buscar.grid(row=0, column=3, padx=(0, 10), pady=5, sticky="ew")
+
+        # Trace para búsqueda en tiempo real con trace_add
+        self.texto_busqueda = ctk.StringVar()
+        self.entry_buscar.configure(textvariable=self.texto_busqueda)
+        self.texto_busqueda.trace_add("write", self.controller.buscar_usuarios)
 
         # Label + option menu para filtrar por género
         self.label_genero = ctk.CTkLabel(self.frame_superior, text="Género:")
         self.label_genero.grid(row=0, column=4, padx=5)
 
-        self.option_genero = ctk.CTkOptionMenu(self.frame_superior, values=["otro", "masculino", "femenino"])
+        self.option_genero = ctk.CTkOptionMenu(
+            self.frame_superior,
+            values=["todos", "masculino", "femenino", "otro"],
+            command=self.controller.filtrar_por_genero
+        )
+        self.option_genero.set("todos")
         self.option_genero.grid(row=0, column=5, padx=5)
 
-        # Botones de añadir, eliminar, editar y salir
+        # Botones de añadir y eliminar (quitamos editar y salir)
         self.boton_eliminar = ctk.CTkButton(self.frame_superior, text="Eliminar", width=80,
                                             command=self.controller.eliminar_usuario)
         self.boton_eliminar.grid(row=0, column=6, padx=5)
@@ -65,17 +76,9 @@ class MainView(ctk.CTkFrame):
                                           command=self.controller.abrir_formulario)
         self.boton_añadir.grid(row=0, column=7, padx=5)
 
-        self.boton_editar = ctk.CTkButton(self.frame_superior, text="Editar", width=80,
-                                          command=self.controller.editar_usuario)
-        self.boton_editar.grid(row=0, column=8, padx=5)
-
-        self.boton_salir = ctk.CTkButton(self.frame_superior, text="Salir", width=80,
-                                         fg_color="gray30", command=self.controller.salir_app)
-        self.boton_salir.grid(row=0, column=9, padx=5)
-
         # Panel izquierdo (ScrollableFrame)
         self.frame_lista = ctk.CTkFrame(self)
-        self.frame_lista.grid(row=1, column=0, sticky="nsew", padx=(10,5), pady=(0,10))
+        self.frame_lista.grid(row=1, column=0, sticky="nsew", padx=(10, 5), pady=(0, 10))
         self.frame_lista.rowconfigure(0, weight=1)
         self.frame_lista.columnconfigure(0, weight=1)
 
@@ -85,13 +88,13 @@ class MainView(ctk.CTkFrame):
 
         # Panel derecho (detalle y preview)
         self.frame_preview = ctk.CTkFrame(self)
-        self.frame_preview.grid(row=1, column=1, sticky="nsew", padx=(5,10), pady=(0,10))
+        self.frame_preview.grid(row=1, column=1, sticky="nsew", padx=(5, 10), pady=(0, 10))
         self.frame_preview.columnconfigure(0, weight=1)
 
         # Creo un label para mostrar la imagen de avatar
         self.label_avatar = ctk.CTkLabel(self.frame_preview, text="(sin foto)", height=150, fg_color="gray30",
                                          corner_radius=10)
-        self.label_avatar.pack(padx=10, pady=(20,10), fill="both")
+        self.label_avatar.pack(padx=10, pady=(20, 10), fill="both")
 
         # Creo un label para mostrar el nombre
         self.label_nombre = ctk.CTkLabel(self.frame_preview, text="Nombre: -", anchor="w")
@@ -102,8 +105,19 @@ class MainView(ctk.CTkFrame):
         self.label_edad.pack(fill="x", padx=20, pady=5)
 
         # Creo un label para mostrar el género
-        self.label_genero = ctk.CTkLabel(self.frame_preview, text="Género: -", anchor="w")
-        self.label_genero.pack(fill="x", padx=20, pady=5)
+        self.label_genero_preview = ctk.CTkLabel(self.frame_preview, text="Género: -", anchor="w")
+        self.label_genero_preview.pack(fill="x", padx=20, pady=5)
+
+        # Barra de estado
+        self.frame_estado = ctk.CTkFrame(self)
+        self.frame_estado.grid(row=2, column=0, columnspan=2, sticky="ew", padx=10, pady=(0, 10))
+        self.frame_estado.columnconfigure(0, weight=1)
+
+        self.label_estado = ctk.CTkLabel(self.frame_estado, text="Listo. 0 usuarios visibles.")
+        self.label_estado.grid(row=0, column=0, sticky="w", padx=10, pady=5)
+
+        self.label_auto_guardar = ctk.CTkLabel(self.frame_estado, text="Auto-guardar (10s): OFF")
+        self.label_auto_guardar.grid(row=0, column=1, sticky="e", padx=10, pady=5)
 
         # Variable para guardar el usuario seleccionado
         self.usuario_seleccionado = None
@@ -145,13 +159,25 @@ class MainView(ctk.CTkFrame):
         # Crea botones con el nombre de cada usuario, los cuales se van a poder pulsar y mostrarán
         # la información asociada a cada uno
         for indice, usuario in enumerate(lista_usuarios):
+            # Frame para cada usuario en la lista
+            frame_usuario = ctk.CTkFrame(self.scrollable_lista)
+            frame_usuario.pack(fill="x", padx=5, pady=2)
+
+            # Botón con nombre del usuario
             boton = ctk.CTkButton(
-                self.scrollable_lista,
-                text=usuario.nombre,
+                frame_usuario,
+                text=f"{usuario.nombre} — {usuario.edad} — {usuario.genero}",
                 command=lambda u=usuario, idx=indice: self.seleccionar_usuario(u, idx),
-                anchor="w"
+                anchor="w",
+                fg_color="transparent",
+                hover_color="gray25",
+                text_color=("gray10", "gray90")
             )
-            boton.pack(fill="x", padx=5, pady=2)
+            boton.pack(fill="x")
+
+            # Bind doble clic para editar
+            boton.bind("<Double-Button-1>",
+                       lambda e, u=usuario, idx=indice: self.controller.editar_usuario_doble_clic(u, idx))
 
     # Función para seleccionar usuario de la lista
     def seleccionar_usuario(self, usuario, indice):
@@ -189,9 +215,27 @@ class MainView(ctk.CTkFrame):
         if usuario:
             self.label_nombre.configure(text=f"Nombre: {usuario.nombre}")
             self.label_edad.configure(text=f"Edad: {usuario.edad}")
-            self.label_genero.configure(text=f"Género: {usuario.genero}")
+            self.label_genero_preview.configure(text=f"Género: {usuario.genero}")
         else:
             # Si no hay usuario, mostrar valores por defecto
             self.label_nombre.configure(text="Nombre: -")
             self.label_edad.configure(text="Edad: -")
-            self.label_genero.configure(text="Género: -")
+            self.label_genero_preview.configure(text="Género: -")
+
+    # Función para actualizar la barra de estado
+    def actualizar_estado(self, mensaje, total_usuarios, usuarios_visibles):
+        texto_estado = f"{mensaje} {usuarios_visibles} usuarios visibles."
+        self.label_estado.configure(text=texto_estado)
+
+    # Función para obtener el texto de búsqueda
+    def obtener_texto_busqueda(self):
+        return self.texto_busqueda.get().strip().lower()
+
+    # Función para obtener el género seleccionado
+    def obtener_genero_seleccionado(self):
+        return self.option_genero.get()
+
+    # Función para limpiar filtros
+    def limpiar_filtros(self):
+        self.texto_busqueda.set("")
+        self.option_genero.set("todos")
