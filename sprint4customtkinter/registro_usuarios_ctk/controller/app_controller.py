@@ -5,11 +5,27 @@ import tkinter.messagebox as messagebox
 from PIL import Image
 import os
 
+import customtkinter as ctk
+from view.main_view import MainView
+from model.usuario_model import GestorUsuarios, Usuario
+import tkinter.messagebox as messagebox
+from PIL import Image
+import os
+
 
 class AppController:
     def __init__(self, app):
         self.app = app
         self.modelo = GestorUsuarios()
+
+        # Cargar usuarios al iniciar la app
+        try:
+            self.modelo.cargar_csv()
+        except FileNotFoundError:
+            # Si el archivo no existe, empezar con lista vacía
+            pass
+        except Exception as e:
+            messagebox.showwarning("Advertencia", f"No se pudieron cargar los usuarios: {str(e)}")
 
         # Vista principal
         self.vista = MainView(self.app, controller=self)
@@ -30,7 +46,46 @@ class AppController:
 
     # Función que elimina el usuario
     def eliminar_usuario(self):
-        print("En construcción...")
+        # Obtener el índice del usuario seleccionado
+        indice = self.vista.obtener_indice_seleccionado()
+
+        if indice is None:
+            import tkinter.messagebox as messagebox
+            messagebox.showwarning("Advertencia", "Selecciona un usuario de la lista para eliminar")
+            return
+
+        # Obtener el usuario para mostrar en el mensaje de confirmación
+        usuario = self.vista.obtener_usuario_seleccionado()
+
+        # Confirmar eliminación con el usuario
+        import tkinter.messagebox as messagebox
+        confirmar = messagebox.askyesno(
+            "Confirmar eliminación",
+            f"¿Estás seguro de que quieres eliminar a {usuario.nombre}?"
+        )
+
+        if not confirmar:
+            return
+
+        try:
+            # Eliminar el usuario usando la función del modelo
+            self.modelo.eliminar(indice)
+
+            # Actualizar la vista con la lista actualizada
+            self.vista.mostrar_usuarios(self.modelo.listar())
+
+            # Limpiar el panel de detalles
+            self.vista.mostrar_detalle_usuario(None)
+
+            # Guardar los cambios en el CSV
+            try:
+                self.modelo.guardar_csv()
+                messagebox.showinfo("Éxito", "Usuario eliminado correctamente")
+            except Exception as e:
+                messagebox.showwarning("Advertencia", f"Usuario eliminado pero no se pudo guardar en CSV: {str(e)}")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"No se pudo eliminar el usuario: {str(e)}")
 
     # Función para editar el usuario
     def editar_usuario(self):
@@ -183,8 +238,9 @@ class AppController:
                 self.vista.mostrar_usuarios(self.modelo.listar())
                 messagebox.showinfo("Éxito", "Usuario añadido correctamente")
                 formulario.destroy()
+
             except Exception as e:
-                messagebox.showerror("Error", "No se pudo guardar el usuario")
+                messagebox.showerror("Error", f"No se pudo guardar el usuario: {str(e)}")
 
         # Función para mostrar errores temporales
         def mostrar_error(mensaje):
@@ -225,7 +281,7 @@ class AppController:
             self.modelo.guardar_csv()
             messagebox.showinfo("Guardar", "Usuarios guardados correctamente.")
         except Exception as e:
-            messagebox.showerror("Error", "No se pudieron guardar los usuarios")
+            messagebox.showerror("Error", f"No se pudieron guardar los usuarios: {str(e)}")
 
     def cargar_usuarios(self):
         try:
@@ -233,7 +289,7 @@ class AppController:
             self.vista.mostrar_usuarios(self.modelo.listar())
             messagebox.showinfo("Cargar", "Usuarios cargados correctamente.")
         except Exception as e:
-            messagebox.showerror("Error", "No se pudieron cargar los usuarios")
+            messagebox.showerror("Error", f"No se pudieron cargar los usuarios: {str(e)}")
 
     # Función para salir de la app
     def salir_app(self):

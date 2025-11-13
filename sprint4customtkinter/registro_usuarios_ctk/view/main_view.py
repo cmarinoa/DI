@@ -105,6 +105,10 @@ class MainView(ctk.CTkFrame):
         self.label_genero = ctk.CTkLabel(self.frame_preview, text="Género: -", anchor="w")
         self.label_genero.pack(fill="x", padx=20, pady=5)
 
+        # Variable para guardar el usuario seleccionado
+        self.usuario_seleccionado = None
+        self.indice_seleccionado = None
+
     # Funciones
 
     # Función asociada al menú Archivo > Salir que cierra la app
@@ -128,6 +132,10 @@ class MainView(ctk.CTkFrame):
         for widget in self.scrollable_lista.winfo_children():
             widget.destroy()
 
+        # Resetear selección
+        self.usuario_seleccionado = None
+        self.indice_seleccionado = None
+
         # Mostrar un mensaje cuando no hay usuarios en la lista
         if not lista_usuarios:
             label_vacio = ctk.CTkLabel(self.scrollable_lista, text="(Sin usuarios)")
@@ -136,25 +144,41 @@ class MainView(ctk.CTkFrame):
 
         # Crea botones con el nombre de cada usuario, los cuales se van a poder pulsar y mostrarán
         # la información asociada a cada uno
-        for usuario in lista_usuarios:
+        for indice, usuario in enumerate(lista_usuarios):
             boton = ctk.CTkButton(
                 self.scrollable_lista,
                 text=usuario.nombre,
-                command=lambda u=usuario: self.controller.seleccionar_usuario(u),
+                command=lambda u=usuario, idx=indice: self.seleccionar_usuario(u, idx),
                 anchor="w"
             )
             boton.pack(fill="x", padx=5, pady=2)
 
+    # Función para seleccionar usuario de la lista
+    def seleccionar_usuario(self, usuario, indice):
+        self.usuario_seleccionado = usuario
+        self.indice_seleccionado = indice
+        self.controller.seleccionar_usuario(usuario)
+
+    # Función para obtener el usuario seleccionado
+    def obtener_usuario_seleccionado(self):
+        return self.usuario_seleccionado
+
+    # Función para obtener el índice seleccionado
+    def obtener_indice_seleccionado(self):
+        return self.indice_seleccionado
 
     # Rellena la lista con la información de cada usuario
     def mostrar_detalle_usuario(self, usuario):
         # Intentar cargar el avatar usando PIL
         try:
-            if usuario.avatar:  # si hay ruta definida
-                avatar_path = os.path.join("assets", usuario.avatar)
-                imagen = ctk.CTkImage(Image.open(avatar_path), size=(150, 150))
-                self.label_avatar.configure(image=imagen, text="")
-                self.label_avatar.image = imagen  # necesario para que no lo borre el garbage collector
+            if usuario:  # si hay usuario seleccionado
+                if usuario.avatar:  # si hay ruta definida
+                    avatar_path = os.path.join("assets", usuario.avatar)
+                    imagen = ctk.CTkImage(Image.open(avatar_path), size=(150, 150))
+                    self.label_avatar.configure(image=imagen, text="")
+                    self.label_avatar.image = imagen  # necesario para que no lo borre el garbage collector
+                else:
+                    raise FileNotFoundError
             else:
                 raise FileNotFoundError
         except Exception:
@@ -162,9 +186,12 @@ class MainView(ctk.CTkFrame):
             self.label_avatar.configure(image=None, text="(sin foto)")
 
         # Actualizar datos de usuario
-        self.label_nombre.configure(text=f"Nombre: {usuario.nombre}")
-        self.label_edad.configure(text=f"Edad: {usuario.edad}")
-        self.label_genero.configure(text=f"Género: {usuario.genero}")
-
-
-
+        if usuario:
+            self.label_nombre.configure(text=f"Nombre: {usuario.nombre}")
+            self.label_edad.configure(text=f"Edad: {usuario.edad}")
+            self.label_genero.configure(text=f"Género: {usuario.genero}")
+        else:
+            # Si no hay usuario, mostrar valores por defecto
+            self.label_nombre.configure(text="Nombre: -")
+            self.label_edad.configure(text="Edad: -")
+            self.label_genero.configure(text="Género: -")
