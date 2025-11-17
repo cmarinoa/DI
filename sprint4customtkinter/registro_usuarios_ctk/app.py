@@ -3,7 +3,8 @@ from controller.app_controller import AppController
 
 if __name__ == "__main__":
     ctk.set_appearance_mode("System")
-    ctk.set_default_color_theme("blue")
+    #Le meto un pack personalizado de colores que está en la carpeta themes
+    ctk.set_default_color_theme("themes/cherry.json")
 
     app = ctk.CTk()
     app.title("Registro de Usuarios (CTk + MVC)")

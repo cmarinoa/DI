@@ -101,7 +101,7 @@ class MainView(ctk.CTkFrame):
         self.frame_preview.columnconfigure(0, weight=1)
 
         # Creo un label para mostrar la imagen de avatar
-        self.label_avatar = ctk.CTkLabel(self.frame_preview, text="(sin foto)", height=150, fg_color="gray30",
+        self.label_avatar = ctk.CTkLabel(self.frame_preview, text="sin foto", height=150, fg_color="transparent",
                                          corner_radius=10)
         self.label_avatar.pack(padx=10, pady=(20, 10), fill="both")
 
@@ -166,7 +166,7 @@ class MainView(ctk.CTkFrame):
             return
 
         # Crea botones con el nombre de cada usuario, los cuales se van a poder pulsar y mostrarán
-        # la información asociada a cada uno
+        # la información asociada a cada uno o editar si haces doble click
         for indice, usuario in enumerate(lista_usuarios):
             # Frame para cada usuario en la lista
             frame_usuario = ctk.CTkFrame(self.scrollable_lista)

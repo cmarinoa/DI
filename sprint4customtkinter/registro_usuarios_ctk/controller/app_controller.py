@@ -459,14 +459,14 @@ class AppController:
                 self.app.after(0, lambda: self._mostrar_error_auto_guardado(str(e)))
 
     def _mostrar_auto_guardado_exitoso(self):
-        """Muestra mensaje de auto-guardado exitoso (ejecutado en hilo principal)"""
+        # Muestra mensaje de auto-guardado exitoso (ejecutado en hilo principal)
         if self.auto_guardar_activo:
             self.vista.actualizar_estado("Auto-guardado exitoso.",
                                          len(self.modelo.listar()),
                                          len(self.usuarios_filtrados))
 
     def _mostrar_error_auto_guardado(self, error):
-        """Muestra error de auto-guardado (ejecutado en hilo principal)"""
+        # Muestra error de auto-guardado (ejecutado en hilo principal)
         if self.auto_guardar_activo:
             self.vista.actualizar_estado(f"Error en auto-guardado: {error}",
                                          len(self.modelo.listar()),
