@@ -4,6 +4,8 @@ from model.usuario_model import GestorUsuarios, Usuario
 import tkinter.messagebox as messagebox
 from PIL import Image
 import os
+import threading
+import time
 
 
 class AppController:
@@ -11,6 +13,11 @@ class AppController:
         self.app = app
         self.modelo = GestorUsuarios()
         self.usuarios_filtrados = []  # Lista para usuarios filtrados
+
+        # Variables para auto-guardado
+        self.auto_guardar_activo = False
+        self.hilo_auto_guardar = None
+        self.detener_hilo = False
 
         # Cargar usuarios al iniciar la app
         try:
@@ -28,6 +35,9 @@ class AppController:
 
         # Recoge los datos del modelo y los vuelca en la interfaz
         self.actualizar_vista()
+
+        # Asegurarse de que el hilo se detenga al cerrar la aplicación
+        self.app.protocol("WM_DELETE_WINDOW", self.salir_app)
 
     # Mostrar detalles del usuario
     def seleccionar_usuario(self, usuario):
@@ -390,6 +400,85 @@ class AppController:
         except Exception as e:
             messagebox.showerror("Error", f"No se pudieron cargar los usuarios: {str(e)}")
 
+    # Creo funciones para controlar el autoguardado no bloqueante con hilos
+
+    def toggle_auto_guardar(self):
+        #Activa o desactiva el auto-guardado
+        if self.auto_guardar_activo:
+            self.detener_auto_guardar()
+        else:
+            self.iniciar_auto_guardar()
+
+    def iniciar_auto_guardar(self):
+        #Inicia el hilo de auto-guardado
+        if self.auto_guardar_activo:
+            return
+
+        self.auto_guardar_activo = True
+        self.detener_hilo = False
+
+        # Actualizar UI
+        self.vista.actualizar_auto_guardar_ui(True, "Auto-guardado activado (cada 10s)")
+
+        # Crear y iniciar hilo
+        self.hilo_auto_guardar = threading.Thread(target=self._hilo_auto_guardar, daemon=True)
+        self.hilo_auto_guardar.start()
+
+    def detener_auto_guardar(self):
+        #Detiene el hilo de auto-guardado
+        if not self.auto_guardar_activo:
+            return
+
+        self.detener_hilo = True
+        self.auto_guardar_activo = False
+
+        # Actualizar UI
+        self.vista.actualizar_auto_guardar_ui(False, "Auto-guardado desactivado")
+
+    def _hilo_auto_guardar(self):
+        #Hilo que ejecuta el auto-guardado cada 10 segundos
+        intervalo = 10  # segundos
+
+        while not self.detener_hilo:
+            # Esperar el intervalo
+            for i in range(intervalo * 10):  # Dividir en intervalos de 0.1s para respuesta rápida
+                if self.detener_hilo:
+                    return
+                time.sleep(0.1)
+
+            if self.detener_hilo:
+                return
+
+            # Ejecutar auto-guardado
+            try:
+                self.modelo.guardar_csv()
+                # Usar after para actualizar la UI desde el hilo principal
+                self.app.after(0, self._mostrar_auto_guardado_exitoso)
+            except Exception as e:
+                # Usar after para mostrar error desde el hilo principal
+                self.app.after(0, lambda: self._mostrar_error_auto_guardado(str(e)))
+
+    def _mostrar_auto_guardado_exitoso(self):
+        """Muestra mensaje de auto-guardado exitoso (ejecutado en hilo principal)"""
+        if self.auto_guardar_activo:
+            self.vista.actualizar_estado("Auto-guardado exitoso.",
+                                         len(self.modelo.listar()),
+                                         len(self.usuarios_filtrados))
+
+    def _mostrar_error_auto_guardado(self, error):
+        """Muestra error de auto-guardado (ejecutado en hilo principal)"""
+        if self.auto_guardar_activo:
+            self.vista.actualizar_estado(f"Error en auto-guardado: {error}",
+                                         len(self.modelo.listar()),
+                                         len(self.usuarios_filtrados))
+
     # Función para salir de la app
     def salir_app(self):
+        # Detener el hilo de auto-guardado antes de salir
+        self.detener_auto_guardar()
+
+        # Esperar un poco a que el hilo se detenga (máximo 1 segundo)
+        if self.hilo_auto_guardar and self.hilo_auto_guardar.is_alive():
+            self.hilo_auto_guardar.join(timeout=1.0)
+
         self.app.destroy()

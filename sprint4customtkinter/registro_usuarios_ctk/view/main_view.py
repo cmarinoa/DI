@@ -22,8 +22,6 @@ class MainView(ctk.CTkFrame):
         self.frame_superior.columnconfigure(2, weight=1)  # Entry ocupa espacio central
 
         # Menú desplegable
-
-        # Creo menú archivo con la opción que nos da CTk
         self.menu_archivo = ctk.CTkOptionMenu(
             self.frame_superior,
             values=["Guardar", "Cargar", "Salir"],
@@ -75,6 +73,17 @@ class MainView(ctk.CTkFrame):
         self.boton_añadir = ctk.CTkButton(self.frame_superior, text="Añadir", width=80,
                                           command=self.controller.abrir_formulario)
         self.boton_añadir.grid(row=0, column=7, padx=5)
+
+        # Botón de auto-guardado
+        self.boton_auto_guardar = ctk.CTkButton(
+            self.frame_superior,
+            text="Auto-guardar: OFF",
+            width=100,
+            command=self.controller.toggle_auto_guardar,
+            fg_color="gray30",
+            hover_color="gray40"
+        )
+        self.boton_auto_guardar.grid(row=0, column=8, padx=5)
 
         # Panel izquierdo (ScrollableFrame)
         self.frame_lista = ctk.CTkFrame(self)
@@ -239,3 +248,15 @@ class MainView(ctk.CTkFrame):
     def limpiar_filtros(self):
         self.texto_busqueda.set("")
         self.option_genero.set("todos")
+
+    # Función para actualizar el estado del auto-guardado
+    def actualizar_auto_guardar_ui(self, activado, mensaje=None):
+        if activado:
+            self.boton_auto_guardar.configure(text="Auto-guardar: ON", fg_color="#2AA876", hover_color="#228B69")
+            self.label_auto_guardar.configure(text="Auto-guardar (10s): ON")
+        else:
+            self.boton_auto_guardar.configure(text="Auto-guardar: OFF", fg_color="gray30", hover_color="gray40")
+            self.label_auto_guardar.configure(text="Auto-guardar (10s): OFF")
+
+        if mensaje:
+            self.label_estado.configure(text=mensaje)
